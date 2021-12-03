@@ -1,0 +1,24 @@
+# ---------------------------------------------
+# Tool: .gitignore 生成器
+# URL: https://www.dute.org/gitignore
+# Powered By: 独特工具箱(dute.org)
+# ---------------------------------------------
+
+### Vue.gitignore ###
+# gitignore template for Vue.js projects
+#
+# Recommended template: Node.gitignore
+
+# TODO: where does this rule come from?
+docs/_book
+
+test/
+
+### Vuejs.gitignore ###
+
+node_modules/
+dist/
+npm-debug.log
+yarn-error.log
+
+### END .gitignore -----------------------------------------
