@@ -2,9 +2,10 @@
   <div class="page">
     <div class="head-top">
       <div class="head-flex">
-        <img
+        <!-- <img
           src="https://t9.baidu.com/it/u=1661947349,1453556410&fm=218&app=92&f=JPG?w=121&h=75&s=171319CF4C6B2C17C92C98A20300F013"
-          class="logo" alt="">
+          class="logo" alt=""> -->
+        <div class="logo"></div>
         <div>LOGO</div>
       </div>
       <div v-if="address==''" class="packet" @click="connect">Connect Wallet</div>
@@ -126,7 +127,7 @@
         <div>30,000</div>
         <div>3,000</div>
       </div> -->
-       <div class="no-data">暂未推出</div>
+      <div class="no-data">暂未推出</div>
     </div>
     <van-overlay :show="loading">
       <van-loading class="loading" size="60" text-size="32" color="#1989fa" type="spinner"> 加载中...</van-loading>
@@ -134,10 +135,15 @@
   </div>
 </template>
 <script>
- import { Dialog } from 'vant';
-  var urlTab = 'http://192.168.136.182:8080'
+  import {
+    Dialog
+  } from 'vant';
+  import Web3 from "web3";
+  import abiJson from '../assets/abi';
+  var urlTab = 'http://103.198.203.142/api'
   var web3Provider;
   var web3js;
+  var VotingContract;
   import Clipboard from 'clipboard'
   export default {
     data() {
@@ -146,7 +152,7 @@
         number: '',
         address: '',
         realyAddress: '',
-        add: '0x5b40E0Ac84cb3798c45ffb4c97EA9EC621F93886',
+        add: '0x9c8DA0e28647E13ba6c30ffA819976967181526E',
         awardMami: '',
         mami: '',
         percentage: '',
@@ -158,7 +164,9 @@
         loading: false,
         inviteCode: '', //邀请码
         BeinviteCode: '',
-        yqUrl:''
+        yqUrl: '',
+        ifImToken: false,
+        usdtAddress: '0x55d398326f99059ff775485246999027b3197955'
       };
     },
     methods: {
@@ -168,24 +176,28 @@
       },
       initClipboard() {
         if (!this.ifConnect) {
-          Dialog({ message: '请先连接钱包' });
+          Dialog({
+            message: '请先连接钱包'
+          });
           return
         }
         this.yqUrl = location.origin + '?inviteCode=' + this.inviteCode
-        var clipboard = new Clipboard('.yq')  
-        clipboard.on('success', e => {  
-          console.log('复制成功')  
-          Dialog({ message: '邀请链接复制成功' });
+        var clipboard = new Clipboard('.yq')
+        clipboard.on('success', e => {
+          console.log('复制成功')
+          Dialog({
+            message: '邀请链接复制成功'
+          });
           // 释放内存  
-          clipboard.destroy()  
-        
-        })  
-        clipboard.on('error', e => {  
+          clipboard.destroy()
+
+        })
+        clipboard.on('error', e => {
           // 不支持复制  
-          console.log('该浏览器不支持自动复制')  
+          console.log('该浏览器不支持自动复制')
           // 释放内存  
-          clipboard.destroy()  
-        })  
+          clipboard.destroy()
+        })
       },
       //投资概览
       summary() {
@@ -211,21 +223,27 @@
       },
       buy() {
         if (!this.ifConnect) {
-          Dialog({ message: '请先连接钱包' });
+          Dialog({
+            message: '请先连接钱包'
+          });
+          return
+        }
+        if (!this.number > 0) {
+          Dialog({
+            message: '请先投资数量'
+          });
           return
         }
         var _that = this
         var value = _that.number * 1000000000000000000
         _that.loading = true
-        web3js.eth.sendTransaction({
-          from: _that.realyAddress,
-          // to: _that.add,
-          to: _that.realyAddress == '0x5b40E0Ac84cb3798c45ffb4c97EA9EC621F93886' ?
-            '0x2C7f6B3FeCb4AF2054e031dfE89DaF9Ece6e4Eb9' : '0x5b40E0Ac84cb3798c45ffb4c97EA9EC621F93886', //测试 
-          value
-        }).then(function (receipt) {
+        VotingContract.methods.transfer(_that.add, BigInt(value)).send({
+          from: _that.realyAddress
+        }).then(receipt => {
           _that.init()
-          Dialog({ message: '投资成功' });
+          Dialog({
+            message: '投资成功'
+          });
           _that.verifyFun({
             "hash": receipt.transactionHash,
             "num": Number(_that.number),
@@ -237,26 +255,30 @@
         })
       },
       link() {
+        var _that = this
         if (ethereum) {
           web3Provider = ethereum;
           // 新版需要请求用户授权
           try {
             ethereum.enable();
+            // ethereum.eth_requestAccounts()
           } catch (error) {
-            Dialog({ message: '用户取消授权' });
+            Dialog({
+              message: '用户取消授权'
+            });
             return;
           }
         } else if (web3) {
-          // MetaMask Legacy dapp browsers...
           web3Provider = web3.currentProvider;
-          console.log("web3.currentProvider:");
-          console.log(web3.currentProvider);
         } else {
-          web3Provider = new Web3.providers.HttpProvider('http://localhost:8545');
-          console.log("https://http-testnet.hecochain.com");
+          web3Provider = new Web3.providers.HttpProvider('https://bsc-dataseed1.binance.org');
         }
         web3js = new Web3(web3Provider);
 
+        VotingContract = new web3js.eth.Contract(
+          abiJson,
+          _that.usdtAddress
+        )
       },
       init() {
         //初始化
@@ -283,57 +305,6 @@
             alert('获取地址失败')
           }
         });
-        // window.addEventListener('load', function () {
-        //   if (!window.web3) { //用来判断你是否安装了metamask
-        //     window.alert('Please install MetaMask first.'); //如果没有会去提示你先去安装
-        //     return;
-        //   }
-        //   if (!web3.eth.coinbase) { //这个是判断你有没有登录，coinbase是你此时选择的账号
-        //     window.alert('Please activate MetaMask first.');
-        //     return;
-        //   }
-        //   // Checking if Web3 has been injected by the browser (Mist/MetaMask)
-        //   if (typeof web3 !== 'undefined') {
-
-        //     // Use the browser's ethereum provider
-        //     web3.personal.sign(web3.fromUtf8("Hello from wanghui!"), web3.eth.coinbase, console.log);
-
-        //   }
-        //   console.log(window.web3);
-        //   console.log(web3);
-        // });
-        // if (!!window.imToken || window.ethereum.isImToken) {
-        //   //浏览器环境是 imToken DApp browser
-        //   window.addEventListener("load", async () => {
-        //     alert('2')
-        //     // Modern dapp browsers...
-        //     if (window.ethereum) {
-        //       window.web3 = new Web3(ethereum);
-        //       try {
-        //         // Request account access if needed
-        //         await ethereum.enable();
-        //         // Acccounts now exposed
-        //         web3.eth.sendTransaction({
-        //           /* ... */
-        //         });
-        //       } catch (error) {
-        //         // User denied account access...
-        //       }
-        //       alert('1')
-        //     }
-        //     // Legacy dapp browsers...
-        //     else if (window.web3) {
-        //       window.web3 = new Web3(web3.currentProvider);
-        //       // Acccounts always exposed
-        //       web3.eth.sendTransaction({
-        //         /* ... */
-        //       });
-        //       alert('3')
-        //     }
-        //   });
-        // } else {
-        //   alert('2')
-        // }
       }
     },
     mounted() {
@@ -347,9 +318,11 @@
   .page {
     padding: 30px 0 60px;
   }
-  .van-dialog{
-    transform: scale3d(2,2,2) translateX(-25%);
+
+  .van-dialog {
+    transform: scale3d(2, 2, 2) translateX(-25%);
   }
+
   .no-data {
     text-align: center;
     font-weight: bolder;

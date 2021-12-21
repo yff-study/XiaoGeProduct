@@ -6,14 +6,13 @@ import router from './router'
 import 'lib-flexible/flexible'
 import { Field,Button,Loading,Overlay} from 'vant';
 Vue.use(Loading);
-// import Web3 from 'web3'
-// Vue.prototype.Web3 = Web3
 Vue.use(Field);
 Vue.use(Button);
 Vue.use(Overlay);
 Vue.config.productionTip = false
 import VueAxiosPlugin from 'vue-axios-plugin'
-
+// import Web3 from 'web3'
+// Vue.prototype.Web3 = Web3
 Vue.use(VueAxiosPlugin, {
   // 请求拦截处理
   reqHandleFunc: config => config,
